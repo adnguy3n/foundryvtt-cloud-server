@@ -1,0 +1,10 @@
+{
+  "buckets": ["nguyeant-foundry-bucket"],
+  "region": "us-central-1",
+  "endpoint": "https://storage.googleapis.com",
+  "acl": "public-read",
+  "credentials": {
+    "accessKeyId": "GOOG1EELCDJ43FNAZJHC5W46GFH2KSON25MJIZQ3A2IISMEDARV3JAVHMOH54",
+    "secretAccessKey": "RwQux8OXN3mSSvzxkX09Uudw4WG6eCza/M75OR28"
+  }
+}
