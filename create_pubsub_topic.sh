@@ -1,1 +1,1 @@
-gcloud pubsub topics create stop-foundry-server
+gcloud pubsub topics create stop-foundryvtt-server
