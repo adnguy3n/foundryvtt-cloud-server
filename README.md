@@ -4,6 +4,7 @@ This project requires a license for Foundry VTT: https://foundryvtt.com/
 It also uses the following Cloud Services:  
 Compute Engine  
 Cloud Storage  
+Cloud Functions  
 Pub/Sub  
 Cloud Scheduler  
 Monitoring  
