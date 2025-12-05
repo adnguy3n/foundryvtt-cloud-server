@@ -175,7 +175,11 @@ An alert can be setup to send a notification to a Pub/Sub Topic and have it trig
 
 On Monitoring, create an Alert policy that uses the Sent Bytes from the Foundry VM Instance as the metric. Set the Rolling Window to 1 hour so the metric must meet the required threshold for 1 hour before the Alert sends a notification to Pub/Sub to shut off the server.
 
+<img width="2288" height="926" alt="image" src="https://github.com/user-attachments/assets/6cc04d16-f742-41cc-ae19-d75ceda0a4ef" />
+
 Now we need to configure the Condition Trigger. Set the alert trigger to Anytime the series violates; the Rolling Window will not let it trigger until the condition is met for at least one continuous hour. Now set the threshold to 50000 for an activity threshold of 50,000 kb/s. With this anytime the amount of sent bytes by the VM instance is lower than 50,000 kb/s for a continuous duration of 1 hour, an alert notifcation will be made.
+
+<img width="812" height="875" alt="image" src="https://github.com/user-attachments/assets/cb09d978-d3e3-4cc7-948c-f5e4ae8b7152" />
 
 Now we need to set the alert notification to be sent to the Pub/Sub topic we made earlier so enable the usage of the Notifications Channel. Then go to Manage Notifications Channels -> Pub/Sub and click Add New. Name it and select the topic you made earlier. It will ask for a path to the topic which will be:
 ```
@@ -185,6 +189,8 @@ For me, this was:
 ```
 projects/term-project-478209/topics/stop-foundryvtt-server
 ```
+<img width="554" height="797" alt="image" src="https://github.com/user-attachments/assets/d483cfc9-6858-45ea-b2e5-c8da0938b5a1" />
+
 Then hit Add Channel. Afterwards go to Notifications Channels for the Alert Policy and select the Notification Channel that you just made.
 
 Finally, name the Alert Policy and hit Create Policy.
@@ -203,3 +209,6 @@ gcloud scheduler jobs create pubsub foundry-midnight-shutdown \
 ```
 
 Replace the Time Zone, Topic Name, and Region with the appropriate values. Alternatively, you can do it in the Console. The important part is picking the right time zone and when the job is triggered; "0 0 * * *" is set for Every night at midnight. The message body itself can be anything you want, but something like Midnight Shutdown would probably make more sense if you read the logs and see the job being triggered in it.
+
+<img width="578" height="1129" alt="image" src="https://github.com/user-attachments/assets/7e8ce6a8-f34a-4a30-9479-8261aa23b57c" />
+
