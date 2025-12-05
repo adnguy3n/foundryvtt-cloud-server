@@ -1,12 +1,15 @@
 # foundryvtt-cloud-server
 This project requires a license for Foundry VTT: https://foundryvtt.com/
 
-It also uses the following Cloud Services:
-Compute Engine
-Cloud Storage
-Pub/Sub
-Cloud Scheduler
-Monitoring
+It also uses the following Cloud Services:  
+Compute Engine  
+Cloud Storage  
+Pub/Sub  
+Cloud Scheduler  
+Monitoring  
+
+<img width="508" height="361" alt="image" src="https://github.com/user-attachments/assets/b3e9dd40-ebb1-4260-89ff-416404138639" />
+
 
 The project ID at the time I made this was term-project-478209.
 
