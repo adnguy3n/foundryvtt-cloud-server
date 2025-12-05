@@ -97,3 +97,109 @@ In Foundry, when selecting images, there should now be an Amazon S3 tab where yo
 
 While it does say Amazon S3, the bucket being used is the Cloud Storage Bucket we created on Google Cloud.
 
+## Cloud Function Setup
+
+The following cloud function was used to automatically shut off of the VM Instance, triggered by a Pub/Sub Topic.
+
+```
+package function
+
+import (
+	"context"
+	"fmt"
+
+	compute "cloud.google.com/go/compute/apiv1"
+	computepb "cloud.google.com/go/compute/apiv1/computepb"
+	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/cloudevents/sdk-go/v2/event"
+)
+
+func init() {
+	functions.CloudEvent("StopFoundryServer", StopFoundryServer)
+}
+
+func StopFoundryServer(ctx context.Context, e event.Event) error {
+	// To identify which VM Instance will be shut down.
+	projectID := "term-project-478209"
+	instanceName := "foundry-vtt-server"
+	zone := "us-central1-c"
+
+	// Inits a compute engine client.
+	client, err := compute.NewInstancesRESTClient(ctx)
+	if err != nil {
+		return fmt.Errorf("Error with Client Init: %w", err)
+	}
+
+	defer client.Close()
+
+	// Create the Stop Request.
+	req := &computepb.StopInstanceRequest{
+		Project:  projectID,
+		Zone:     zone,
+		Instance: instanceName,
+	}
+
+	// Stop the Foundry Server.
+	if _, err := client.Stop(ctx, req); err != nil {
+		return fmt.Errorf("Error with stopping instance: %w", err)
+	}
+
+	return nil
+}
+```
+
+It can be found, along with its go.mod and go.sum files in the functions folder of this repository. There is also a deploy_functions.sh script, however the Pub/Sub Topic must be made first before the script will work.
+
+```
+gcloud functions deploy stop-foundry-server \
+--gen2 \
+--runtime=go125 \
+--region=us-central1 \
+--source=. \
+--entry-point=StopFoundryServer \
+--trigger-topic=stop-foundryvtt-server
+```
+
+## Pub/Sub Setup
+
+The payload does not matter; only that something is sent. A simple command creating the topic is all that is neeeded for the Cloud Function to run.
+```
+gcloud pubsub topics create stop-foundry-server
+```
+
+## Monitoring Alert Setup
+
+An alert can be setup to send a notification to a Pub/Sub Topic and have it trigger a Cloud Function. However, the service account for Monitoring: service-35701440766@gcp-sa-monitoring-notification.iam.gserviceaccount.com must be given Pub/Sub Publisher role to do so.
+
+### Create the Alert Policy
+
+On Monitoring, create an Alert policy that uses the Sent Bytes from the Foundry VM Instance as the metric. Set the Rolling Window to 1 hour so the metric must meet the required threshold for 1 hour before the Alert sends a notification to Pub/Sub to shut off the server.
+
+Now we need to configure the Condition Trigger. Set the alert trigger to Anytime the series violates; the Rolling Window will not let it trigger until the condition is met for at least one continuous hour. Now set the threshold to 50000 for an activity threshold of 50,000 kb/s. With this anytime the amount of sent bytes by the VM instance is lower than 50,000 kb/s for a continuous duration of 1 hour, an alert notifcation will be made.
+
+Now we need to set the alert notification to be sent to the Pub/Sub topic we made earlier so enable the usage of the Notifications Channel. Then go to Manage Notifications Channels -> Pub/Sub and click Add New. Name it and select the topic you made earlier. It will ask for a path to the topic which will be:
+```
+projects/{Project ID}/topics/{Topic Name}
+```
+For me, this was:
+```
+projects/term-project-478209/topics/stop-foundryvtt-server
+```
+Then hit Add Channel. Afterwards go to Notifications Channels for the Alert Policy and select the Notification Channel that you just made.
+
+Finally, name the Alert Policy and hit Create Policy.
+
+## Cloud Scheduler Setup
+
+The last service to be set up is Cloud Scheduler. This is to create a backup Shutoff Trigger in the case of a player accidentally forgetting to leave the server or a malicious bot access the server.
+
+```
+gcloud scheduler jobs create pubsub foundry-midnight-shutdown \
+  --schedule="0 0 * * *" \
+  --timezone={Time Zone} \
+  --topic={Topic Name} \
+  --message-body="Midnight Shutdown" \
+  --location={Region} \
+```
+
+Replace the Time Zone, Topic Name, and Region with the appropriate values. Alternatively, you can do it in the Console. The important part is picking the right time zone and when the job is triggered; "0 0 * * *" is set for Every night at midnight. The message body itself can be anything you want, but something like Midnight Shutdown would probably make more sense if you read the logs and see the job being triggered in it.
